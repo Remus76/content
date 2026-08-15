@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v6
+
+      - name: "Prepare target directory"
+        run: mkdir -p output/Own
+
+      - name: "Download and setup c4group"
+        run: |
+          curl -L -o c4group https://github.com/Remus76/LegacyClonk/releases/download/c4group_config_v363/c4group-Linux-x64
+          chmod +x c4group
+
+      - name: "Adjust versions"
+        run: ./update_version.sh ${{ github.ref_name }}
+
+      - name: "Fix definition paths"
+        run: ./fix_definition_paths.sh
+
+      - name: "Pack group files"
+        run: |
+          ./pack_group.sh Knights.c4d output/Own
+          ./pack_group.sh Knights.c4f output/Own
+          ./pack_group.sh Worlds.c4f/Goldmine.c4s output/Own
+
+      - name: "Upload group files"
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ github.ref_name }}
+          path: output/*
